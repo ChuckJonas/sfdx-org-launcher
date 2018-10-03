@@ -1,11 +1,12 @@
 import * as React from 'react';
-import { Button, Icon, Popover, Col, Row, Popconfirm } from 'antd';
+import { Button, Icon, Popover, Col, Row, Popconfirm, Tooltip } from 'antd';
 import * as childProcess from 'child_process';
 
 interface LoginItemProps {
-  login: NonScratchOrg;
+  login: Login;
   onLogout: () => void
   onError: (err: string) => void;
+  onFix: (login: Login) => void
 }
 
 interface LoginItemState {
@@ -21,22 +22,24 @@ export class LoginItem extends React.Component<LoginItemProps, LoginItemState> {
   }
   public render() {
     return (
-      <Popover placement="top" title='Details' content={this.renderDetails()} trigger='hover'>
-        <Row type="flex" justify="space-between" style={{width:'100%'}}>
-          <Col span={16}>
-            {this.props.login.connectedStatus !== 'Connected' && <Button icon='tool' type='danger' onClick={this.fix} />}
-            {this.props.login.connectedStatus === 'Connected' && <Button icon='select' loading={this.state.opening} type="primary" onClick={() => { this.login() }} />}
-            <span style={{ marginLeft: 10 }}>
-              {this.props.login.alias ? `${this.props.login.alias} - ` : ''} {this.props.login.username}
-            </span>
-          </Col>
-          <Col span={2}>
+
+      <Row type="flex" justify="space-between" align="middle" style={{ width: '100%' }}>
+        <Col span={2}>
+          {this.props.login.connectedStatus !== 'Connected' && <Button icon='tool' type='danger' onClick={()=>this.props.onFix(this.props.login)} />}
+          {this.props.login.connectedStatus === 'Connected' && <Button icon='select' loading={this.state.opening} type="primary" onClick={() => { this.login() }} />}
+          {this.props.login.isProduction &&  <Tooltip placement="top" title='production'><Icon type="cloud-o" style={{ color: '#21A0DF', fontWeight:'bold'}} /> </Tooltip>}
+        </Col>
+        <Col span={20}>
+          <Popover placement="top" title='Details' content={this.renderDetails()} trigger='hover'>
+            {this.props.login.alias ? `${this.props.login.alias} - ` : ''} {this.props.login.username}
+          </Popover>
+        </Col>
+        <Col span={2}>
           <Popconfirm placement="top" title={'Are sure you want to remove this connection?'} onConfirm={this.logout} okText="Logout" cancelText="Cancel">
-            <Button onClick={this.logout} type='danger' icon='close' />
+            <Button type='danger' icon='delete' />
           </Popconfirm>
-          </Col>
-        </Row>
-      </Popover>
+        </Col>
+      </Row>
     );
   }
 
@@ -49,21 +52,11 @@ export class LoginItem extends React.Component<LoginItemProps, LoginItemState> {
     )
   }
 
-  private fix = () => {
-    childProcess.exec(`sfdx force:auth:web:login -r ${this.props.login.loginUrl} -a '${this.props.login.alias}'`, (error, stdout, stderr) => {
-      if (error) {
-        console.log(error);
-        this.props.onError(stderr);
-      }
-    });
-  }
-
   private login = () => {
     this.setState({ opening: true }, () => {
       childProcess.exec(`sfdx force:org:open -u ${this.props.login.username}`, (error, stdout, stderr) => {
         this.setState({ opening: false });
         if (error) {
-          console.log(error);
           this.props.onError(stderr);
         }
       });
@@ -73,7 +66,6 @@ export class LoginItem extends React.Component<LoginItemProps, LoginItemState> {
   private logout = () => {
     childProcess.exec(`sfdx force:auth:logout -p -u '${this.props.login.username}'`, (error, stdout, stderr) => {
       if (error) {
-        console.log(error);
         this.props.onError(stderr);
       }
       this.props.onLogout();

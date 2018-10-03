@@ -22,3 +22,8 @@ interface NonScratchOrg {
   isDevHub?: boolean;
   isDefaultUsername?: boolean;
 }
+
+
+interface Login extends NonScratchOrg{
+  isProduction: boolean
+}

@@ -3,32 +3,67 @@ import * as childProcess from 'child_process';
 import { Alert, Button, List, Card, Layout, Spin, Icon, Row, Col, Input } from 'antd'
 import { LoginItem } from './LoginItem';
 import { AddLogin } from './AddLogin';
+import { Store } from '../lib/Store';
+import { link } from 'fs';
+import * as os from 'os'
 
 interface AppState {
-  logins: NonScratchOrg[];
+  logins: Login [];
   search: string;
   error?: string;
+  refreshing: boolean;
+  showingAdd: boolean;
+  waitingForAuth: boolean;
+  alias: string,
+  instanceUrl: string
 }
 
 export default class Home extends React.Component<{}, AppState> {
+
+  // private store: Store;
+  private currentProcess: childProcess.ChildProcess;
   constructor(props: any) {
     super(props);
 
+    // this.store = new Store({
+    //   configName: 'user-preferences',
+    //   defaults: {
+    //     logins: []
+    //   }
+    // });
+
+    // let logins = this.store.get('logins') || [];
     this.state = {
+      refreshing: false,
       logins: [],
-      search: ''
+      search: '',
+      showingAdd: false,
+      waitingForAuth: false,
+      alias: '',
+      instanceUrl: ''
     }
+  }
+
+  public componentDidMount() {
     this.loadLogins();
   }
 
   private loadLogins = () => {
-    childProcess.exec('sfdx force:org:list --json', (error, stdout, stderr) => {
-      if (error) {
-        console.log(error);
-        return this.setState({ error: stderr })
-      }
-      let results = JSON.parse(stdout) as OrgListResult
-      this.setState({ logins: results.result.nonScratchOrgs, error: undefined })
+    this.setState({refreshing: true}, () => {
+      childProcess.exec('sfdx force:org:list --json', (error, stdout, stderr) => {
+        if (error) {
+          console.log(error);
+          return this.setState({ error: stderr })
+        }
+        let results = JSON.parse(stdout) as OrgListResult
+        let logins = results.result.nonScratchOrgs.map(org=>{
+          return {...org, ...{isProduction: !(/\.?cs[1-9]{1,3}\./g.test(org.instanceUrl))}}
+        });
+        console.log(logins.map(li => li.loginUrl));
+        console.log(logins.map(li => li.instanceUrl));
+        // this.store.set('logins', logins);
+        this.setState({ logins, refreshing: false, error: undefined })
+      });
     });
   }
 
@@ -40,23 +75,97 @@ export default class Home extends React.Component<{}, AppState> {
     this.setState({ error });
   }
 
-  private refreshLogins = () => {
-    this.setState({ logins: [] }, this.loadLogins)
+  private showAdd = () => {
+    this.setState({ showingAdd: true });
+  }
+
+  public closeAdd = () => {
+    console.log(this.currentProcess);
+    if(this.currentProcess && !this.currentProcess.killed){
+      console.log('killing process');
+      this.currentProcess.kill();
+    }
+
+    this.setState({ waitingForAuth: false, showingAdd: false });
+  }
+
+  private updateAlias = (alias: string) => {
+    this.setState({ alias });
+  }
+
+  private updateInstanceUrl = (instanceUrl: string) => {
+    this.setState({ instanceUrl });
+  }
+
+  private launchAuth = () => {
+    this.setState({ waitingForAuth: true }, () => {
+      let params = '';
+      if(this.state.alias){
+        params += ` -a '${this.state.alias}'`
+      }
+
+      if(this.state.instanceUrl){
+        let instanceUrl = this.state.instanceUrl.startsWith('https://') ? this.state.instanceUrl : 'https://' + this.state.instanceUrl;
+        params += ` -r '${instanceUrl}'`
+      }
+
+      let cmd = `sfdx force:auth:web:login ${params}`
+
+      console.log(cmd);
+      this.currentProcess = childProcess.exec(cmd, (error, stdout, stderr) => {
+        this.closeAdd();
+        if (error) {
+          console.log(error);
+          this.setState({waitingForAuth: false});
+          let stdErrors = stderr.split(os.EOL);
+          stdErrors = stdErrors.filter(err => !err.includes(`update available from`));
+          return this.setError(stdErrors.join(os.EOL));
+        }
+
+        this.setState({ waitingForAuth: false, alias: '', instanceUrl: '' }, ()=>{
+          this.closeAdd();
+          this.loadLogins();
+        })
+      });
+
+    });
+  }
+
+  private fixLogin = (login: Login) => {
+    this.setState({
+      showingAdd:true,
+      alias: login.alias || '',
+      instanceUrl: login.loginUrl
+    }, this.launchAuth)
   }
 
   public render() {
-
+    let addLogin = (
+      <AddLogin
+        onError={this.setError}
+        onSuccess={this.loadLogins}
+        onOpen={this.showAdd}
+        onClose={this.closeAdd}
+        onLogin={this.launchAuth}
+        visible={this.state.showingAdd}
+        instanceUrl={this.state.instanceUrl}
+        onUpdateInstanceUrl={this.updateInstanceUrl}
+        alias={this.state.alias}
+        onUpdateAlias={this.updateAlias}
+        waiting={this.state.waitingForAuth}
+      />
+    )
     return (
       <Layout>
         {this.state.error && <Alert type='error' message={this.state.error} />}
 
-        <Card title="LOGINS" extra={<AddLogin onError={this.setError} onSuccess={this.refreshLogins} />}>
+        <Card title="LOGINS" extra={addLogin}>
           <Row type="flex" justify="space-between">
             <Col span={12}>
-              <Input value={this.state.search} onChange={(e)=>{this.setSearch(e.target.value)}} placeholder='search' />
+              <Input value={this.state.search} onChange={(e) => { this.setSearch(e.target.value) }} placeholder='search' />
             </Col>
             <Col>
-              <Button icon='reload' shape='circle' onClick={this.refreshLogins} />
+              <Button loading={this.state.refreshing} icon='reload' shape='circle' onClick={this.loadLogins} />
             </Col>
           </Row>
           {this.renderBody()}
@@ -66,37 +175,30 @@ export default class Home extends React.Component<{}, AppState> {
   }
 
   private renderBody = () => {
-    if (!this.state.logins.length && !this.state.error) {
-      return(
-        <Row type="flex" justify="center">
-          <Col>
-            <Spin tip="loading" spinning={true} />
-          </Col>
-        </Row>
-      )
-    }
-    //do filtering
-    let logins = [...this.state.logins];
-    if(this.state.search){
-        logins = this.state.logins.filter(l => {
-          return l.username.indexOf(this.state.search) > -1
-                  || (l.alias && l.alias.indexOf(this.state.search) > -1);
-        });
-    }
+    let logins = [...this.state.logins].filter(ln => {
+      if(!this.state.search.length) return true;
+
+      return ln.username.includes(this.state.search) || (ln.alias && ln.alias.includes(this.state.search));
+    }).sort((a, b) => {
+      return a.username.localeCompare(b.username);
+    });
+
     return (
       <List
+        loading={this.state.refreshing}
         dataSource={logins}
         renderItem={this.renderLogin}
       />
     );
   }
 
-  private renderLogin = (login: NonScratchOrg) => {
+  private renderLogin = (login: Login) => {
+
     return (
       <List.Item>
-        <LoginItem onLogout={this.refreshLogins} onError={this.setError} login={login} />
+        <LoginItem onLogout={this.loadLogins} onError={this.setError} login={login} onFix={this.fixLogin} />
       </List.Item>
     )
-
   }
+
 }

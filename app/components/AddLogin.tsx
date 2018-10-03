@@ -1,73 +1,45 @@
 import * as React from 'react';
-import { Button, Drawer, Form, Row, Col, Input, Spin } from 'antd';
+import { Button, Drawer, Form, Row, Col, Input, Spin, Select } from 'antd';
 import * as childProcess from 'child_process';
 
 export interface AddLoginProps {
   onSuccess: () => void;
   onError: (err: string) => void;
-}
-
-export interface AddLoginState {
+  onOpen: () => void;
+  onClose: () => void;
+  onLogin: () => void;
+  onUpdateInstanceUrl: (string) => void;
+  onUpdateAlias: (string) => void;
   visible: boolean;
   alias: string;
   instanceUrl: string;
   waiting: boolean;
 }
 
-export class AddLogin extends React.Component<AddLoginProps, AddLoginState> {
+
+const formItemLayout = {
+  labelCol: {
+    xs: { span: 12 },
+    sm: { span: 4 },
+  },
+  wrapperCol: {
+    xs: { span: 24 },
+    sm: { span: 16 },
+  },
+};
+
+export class AddLogin extends React.Component<AddLoginProps, never> {
+
   constructor(props) {
     super(props);
-    this.state = {
-      visible: false,
-      alias: '',
-      instanceUrl: '',
-      waiting: false
-    }
-  }
-
-  public closeDrawer = () => {
-    this.setState({ visible: false });
-  }
-
-  public openDrawer = () => {
-    this.setState({ visible: true });
   }
 
   private launchAuth = () => {
-    this.setState({ waiting: true }, () => {
-      let params = '';
-      if(this.state.alias){
-        params += `-a '${this.state.alias}'`
-      }
-
-      if(this.state.instanceUrl){
-        params += `-r '${this.state.instanceUrl}'`
-      }
-      childProcess.exec(`sfdx force:auth:web:login ${params}`, (error, stdout, stderr) => {
-        this.closeDrawer();
-        if (error) {
-          console.log(error);
-          return this.props.onError(stderr);
-        }
-
-        this.setState({ waiting: false, alias: '', instanceUrl: '' }, ()=>{
-          this.closeDrawer();
-          this.props.onSuccess();
-        })
-      });
-    });
-  }
-
-  private updateAlias = (alias: string) => {
-    this.setState({ alias });
-  }
-
-  private updateInstanceUrl = (instanceUrl: string) => {
-    this.setState({ instanceUrl });
+    this.props.onLogin();
   }
 
   private renderDrawer = () => {
-    if (this.state.waiting) {
+    if (this.props.waiting) {
       return (
         <Row type="flex" justify="center">
           <Col>
@@ -76,21 +48,25 @@ export class AddLogin extends React.Component<AddLoginProps, AddLoginState> {
         </Row>
       )
     } else {
+      let val = this.props.instanceUrl === 'login.salesforce.com' || this.props.instanceUrl === 'test.salesforce.com' ? this.props.instanceUrl : undefined;
+      let defaultInstances = (
+        <Select style={{ width: 150 }} value={val} onSelect={(val) => this.props.onUpdateInstanceUrl(val)} placeholder={'default instances'}>
+          <Select.Option value="login.salesforce.com">production</Select.Option>
+          <Select.Option value="test.salesforce.com">sandbox</Select.Option>
+        </Select>
+      )
       return (
         <div>
-          <Form layout="vertical" hideRequiredMark>
-            <Row gutter={16}>
-              <Col span={12}>
-                <Form.Item label="Alias">
-                  <Input value={this.state.alias} onChange={(e) => { this.updateAlias(e.target.value) }} placeholder="enter optional short hand alias" />
-                </Form.Item>
-              </Col>
-              <Col span={12}>
-                <Form.Item label="Instance Url">
-                  <Input value={this.state.instanceUrl} onChange={(e) => { this.updateInstanceUrl(e.target.value) }} addonBefore="https://" placeholder="enter login url" />
-                </Form.Item>
-              </Col>
-            </Row>
+          <Form hideRequiredMark>
+
+            <Form.Item {...formItemLayout} label="Alias">
+              <Input value={this.props.alias} onChange={(e) => { this.props.onUpdateAlias(e.target.value) }} placeholder="enter optional short hand alias" />
+            </Form.Item>
+
+            <Form.Item {...formItemLayout} label="Instance Url">
+              <Input value={this.props.instanceUrl} onChange={(e) => { this.props.onUpdateInstanceUrl(e.target.value) }} addonBefore="https://" addonAfter={defaultInstances} placeholder="enter login url" />
+            </Form.Item>
+
           </Form>
           <div
             style={{
@@ -109,7 +85,7 @@ export class AddLogin extends React.Component<AddLoginProps, AddLoginState> {
               style={{
                 marginRight: 8,
               }}
-              onClick={this.closeDrawer}
+              onClick={this.props.onClose}
             >
               Cancel
             </Button>
@@ -123,14 +99,14 @@ export class AddLogin extends React.Component<AddLoginProps, AddLoginState> {
   public render() {
     return (
       <div>
-        <Button onClick={this.openDrawer} icon='plus' type='primary'>New</Button>
+        <Button onClick={this.props.onOpen} icon='plus' type='primary'>New</Button>
         <Drawer
           title="Create"
           width={720}
           placement="right"
-          onClose={this.closeDrawer}
+          onClose={this.props.onClose}
           maskClosable={false}
-          visible={this.state.visible}
+          visible={this.props.visible}
           style={{
             height: 'calc(100% - 100px)',
             overflow: 'auto',
