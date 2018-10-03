@@ -1,7 +1,5 @@
 # sfdx-org-launcher
 
-# sfdx-org-launcher 
-
 ![logo](https://github.com/ChuckJonas/sfdx-org-launcher/blob/master/resources/icons/sfdx-login_64x64.png "logo") A simple GUI for managing SFDX ORGs.
 
 ## Features
