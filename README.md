@@ -20,11 +20,11 @@ A simple GUI for managing SFDX ORGs.
 
 ## Setup
 
-- Must have [sfdx-cli](https://www.npmjs.com/package/sfdx-cli) installed.  Recommend using `npm -i sfdx-cli`
+- Must have [sfdx-cli](https://developer.salesforce.com/tools/sfdxcli) installed
 - download `.dmg` from release
-- install
-- run
-- tell osx to run anyways
+- install (copy to applications)
+- right click open
+  - tell osx to open anyways
 - report issues ;)
 
 ## Developing

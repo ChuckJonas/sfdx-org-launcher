@@ -49,17 +49,18 @@ export default class Home extends React.Component<{}, AppState> {
   private loadLogins = () => {
     this.setState({refreshing: true}, () => {
       childProcess.exec('sfdx force:org:list --json', (error, stdout, stderr) => {
-        if (error) {
+        if (error && !stderr.includes('noOrgsFound')) {
           console.log(error);
           return this.setState({ error: stderr })
         }
-        let results = JSON.parse(stdout) as OrgListResult
-        let logins = results.result.nonScratchOrgs.map(org=>{
-          return {...org, ...{isProduction: !(/\.?cs[1-9]{1,3}\./g.test(org.instanceUrl))}}
-        });
-        console.log(logins.map(li => li.loginUrl));
-        console.log(logins.map(li => li.instanceUrl));
-        // this.store.set('logins', logins);
+        let logins: Login [] = [];
+        if(stdout){
+          let results = JSON.parse(stdout) as OrgListResult
+          logins = results.result.nonScratchOrgs.map(org=>{
+            return {...org, ...{isProduction: !(/\.?cs[1-9]{1,3}\./g.test(org.instanceUrl))}}
+          });
+        }
+
         this.setState({ logins, refreshing: false, error: undefined })
       });
     });
@@ -78,9 +79,7 @@ export default class Home extends React.Component<{}, AppState> {
   }
 
   public closeAdd = () => {
-    console.log(this.currentProcess);
     if(this.currentProcess && !this.currentProcess.killed){
-      console.log('killing process');
       this.currentProcess.kill();
     }
 
