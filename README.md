@@ -1,17 +1,22 @@
 # sfdx-org-launcher
 
-A simple GUI for managing SFDX ORGs.  Currently only support "traditional" orgs.  Will likely add scratch org configuration in the future.
-
-Currently only packaged for osx... Will hopefully add other distro's in future.
+A simple GUI for managing SFDX ORGs.
 
 ## Features
 
 - View list of authenticated orgs
-  - login to org
   - quick search
+- Launch org (login in browser)
 - Authenticate new orgs
 - Remove orgs
 - fix orgs with expired tokens
+
+### Future Features
+
+- support for scratch orgs
+- windows, linux distro's
+- icon bar quick-launcher
+
 
 ## Setup
 
@@ -19,8 +24,11 @@ Currently only packaged for osx... Will hopefully add other distro's in future.
 - download `.dmg` from release
 - install
 - run
+- tell osx to run anyways
 - report issues ;)
 
 ## Developing
 
 Project boilerplate taken from [electron-react-typescript-boilerplate](https://github.com/iRath96/electron-react-typescript-boilerplate).  See repo readme for help with dev configuration.
+
+PR's welcome!
