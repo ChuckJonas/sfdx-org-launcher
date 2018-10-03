@@ -3,8 +3,6 @@ import * as childProcess from 'child_process';
 import { Alert, Button, List, Card, Layout, Spin, Icon, Row, Col, Input } from 'antd'
 import { LoginItem } from './LoginItem';
 import { AddLogin } from './AddLogin';
-import { Store } from '../lib/Store';
-import { link } from 'fs';
 import * as os from 'os'
 
 interface AppState {
