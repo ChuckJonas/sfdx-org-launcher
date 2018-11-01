@@ -103,7 +103,7 @@ export default class Home extends React.Component<{}, AppState> {
 
       if(this.state.instanceUrl){
         let instanceUrl = this.state.instanceUrl.startsWith('https://') ? this.state.instanceUrl : 'https://' + this.state.instanceUrl;
-        params += ` -r '${instanceUrl}'`
+        params += ` -r ${instanceUrl}`
       }
 
       let cmd = `sfdx force:auth:web:login ${params}`

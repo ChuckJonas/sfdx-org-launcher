@@ -64,7 +64,10 @@ export class LoginItem extends React.Component<LoginItemProps, LoginItemState> {
   }
 
   private logout = () => {
-    childProcess.exec(`sfdx force:auth:logout -p -u '${this.props.login.username}'`, (error, stdout, stderr) => {
+    let cmd = `sfdx force:auth:logout -p -u ${this.props.login.username}`
+    console.log(cmd);
+
+    childProcess.exec(cmd, (error, stdout, stderr) => {
       if (error) {
         this.props.onError(stderr);
       }
