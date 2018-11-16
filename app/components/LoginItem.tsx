@@ -31,7 +31,7 @@ export class LoginItem extends React.Component<LoginItemProps, LoginItemState> {
         </Col>
         <Col span={20}>
           <Popover placement="top" title='Details' content={this.renderDetails()} trigger='hover'>
-            {this.props.login.alias ? `${this.props.login.alias} - ` : ''} {this.props.login.username}
+            {this.props.login.alias ? this.props.login.alias + ' - ' : ''} {this.props.login.username}
           </Popover>
         </Col>
         <Col span={2}>
@@ -54,7 +54,9 @@ export class LoginItem extends React.Component<LoginItemProps, LoginItemState> {
 
   private login = () => {
     this.setState({ opening: true }, () => {
-      childProcess.exec(`sfdx force:org:open -u ${this.props.login.username}`, (error, stdout, stderr) => {
+      let cmd = 'sfdx force:org:open -u "' + this.props.login.username + '"';
+      console.log(cmd);
+      childProcess.exec(cmd, (error, stdout, stderr) => {
         this.setState({ opening: false });
         if (error) {
           this.props.onError(stderr);
@@ -64,7 +66,10 @@ export class LoginItem extends React.Component<LoginItemProps, LoginItemState> {
   }
 
   private logout = () => {
-    childProcess.exec(`sfdx force:auth:logout -p -u '${this.props.login.username}'`, (error, stdout, stderr) => {
+    let cmd = 'sfdx force:auth:logout -p -u "' + this.props.login.username + '"';
+    console.log(cmd);
+
+    childProcess.exec(cmd, (error, stdout, stderr) => {
       if (error) {
         this.props.onError(stderr);
       }
