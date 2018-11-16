@@ -48,7 +48,9 @@ export default class Home extends React.Component<{}, AppState> {
 
   private loadLogins = () => {
     this.setState({refreshing: true}, () => {
-      childProcess.exec('sfdx force:org:list --json', (error, stdout, stderr) => {
+      let cmd = 'sfdx force:org:list --json';
+      console.log(cmd);
+      childProcess.exec(cmd, (error, stdout, stderr) => {
         if (error && !stderr.includes('noOrgsFound')) {
           console.log(error);
           return this.setState({ error: stderr })
@@ -98,24 +100,29 @@ export default class Home extends React.Component<{}, AppState> {
     this.setState({ waitingForAuth: true }, () => {
       let params = '';
       if(this.state.alias){
-        params += ` -a '${this.state.alias}'`
+        params += ' -a \"' + this.state.alias + '\"'
       }
 
       if(this.state.instanceUrl){
         let instanceUrl = this.state.instanceUrl.startsWith('https://') ? this.state.instanceUrl : 'https://' + this.state.instanceUrl;
-        params += ` -r ${instanceUrl}`
+        params += ' -r ' + instanceUrl
       }
 
-      let cmd = `sfdx force:auth:web:login ${params}`
-
+      let cmd = "sfdx force:auth:web:login " + params
+      
       console.log(cmd);
-      this.currentProcess = childProcess.exec(cmd, (error, stdout, stderr) => {
+
+      const defaults = {
+        shell: process.env.ComSpec
+      };
+
+      this.currentProcess = childProcess.exec(cmd, defaults, (error, stdout, stderr) => {
         this.closeAdd();
         if (error) {
           console.log(error);
           this.setState({waitingForAuth: false});
           let stdErrors = stderr.split(os.EOL);
-          stdErrors = stdErrors.filter(err => !err.includes(`update available from`));
+          stdErrors = stdErrors.filter(err => !err.includes('update available from'));
           return this.setError(stdErrors.join(os.EOL));
         }
 
