@@ -23,11 +23,19 @@
 ## Setup
 
 - Must have [sfdx-cli](https://developer.salesforce.com/tools/sfdxcli) installed
+
+### osx
+
 - download `.dmg` from release
 - install (copy to applications)
 - right click open
   - tell osx to open anyways
 - report issues ;)
+
+### windows
+
+- download `.exe`
+- install
 
 ## Developing
 
@@ -48,7 +56,7 @@ A simple GUI for managing SFDX ORGs.
 ### Future Features
 
 - support for scratch orgs
-- windows, linux distro's
+- linux distro's
 - icon bar quick-launcher
 
 
