@@ -108,7 +108,7 @@
     "babel-plugin-import": "^1.13.0",
     "cross-env": "^5.2.1",
     "css-loader": "^2.1.1",
-    "electron": "^3.1.13",
+    "electron": "^18.3.7",
     "electron-builder": "^20.44.4",
     "electron-devtools-installer": "^2.2.4",
     "file-loader": "^3.0.1",
